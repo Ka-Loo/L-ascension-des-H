@@ -8,9 +8,18 @@
         .fretboard-wrapper { display: flex; background: #2d1b10; padding: 25px; border-radius: 10px; border: 2px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
         .labels { display: flex; flex-direction: column-reverse; justify-content: space-between; height: 180px; margin-right: 15px; font-weight: bold; color: #aaa; padding: 5px 0; }
         
-        /* Correction : Le fretboard commence maintenant dès le sillet */
-        .fretboard { display: flex; background: #3d2b1f; border-left: 6px solid #888; position: relative; }
-        .fret-column { display: flex; flex-direction: column-reverse; border-right: 2px solid #666; width: 65px; height: 180px; justify-content: space-around; position: relative; }
+        /* Le manche avec son sillet à gauche */
+        .fretboard { display: flex; background: #3d2b1f; border-left: 6px solid #888; position: relative; height: 180px; }
+        
+        /* Chaque frette est bien délimitée par border-right */
+        .fret-column { 
+            display: flex; flex-direction: column-reverse; 
+            border-right: 2px solid #666; 
+            width: 65px; height: 100%; 
+            justify-content: space-around; position: relative; 
+            z-index: 2;
+        }
+        
         .fret-num { position: absolute; bottom: -25px; width: 100%; text-align: center; font-size: 12px; color: #888; }
         
         .dot { position: absolute; background: rgba(255,255,255,0.15); width: 14px; height: 14px; border-radius: 50%; left: 50%; transform: translateX(-50%); z-index: 0; }
@@ -18,6 +27,7 @@
         .dot.double-bottom { bottom: 25%; }
         .dot.single { top: 50%; transform: translate(-50%, -50%); }
 
+        /* Les cordes passent par-dessus tout */
         .string-line { position: absolute; left: 0; width: 100%; height: 2px; background: rgba(200,200,200,0.3); z-index: 1; pointer-events: none; }
 
         .note { width: 22px; height: 22px; border-radius: 50%; margin: 0 auto; z-index: 5; transition: 0.3s; display: flex; align-items: center; justify-content: center; font-size: 0px; border: 1px solid transparent; background: transparent; }
@@ -30,9 +40,10 @@
         .h-line { position: absolute; z-index: 4; pointer-events: none; height: 2px; transform-origin: left center; }
 
         .controls { margin-top: 50px; display: flex; gap: 15px; flex-direction: column; align-items: center;}
-        .btns { display: flex; gap: 15px; }
-        button { padding: 12px 24px; cursor: pointer; background: #333; color: white; border: 1px solid #555; border-radius: 6px; font-weight: bold; min-width: 120px; }
+        .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        button { padding: 12px 20px; cursor: pointer; background: #333; color: white; border: 1px solid #555; border-radius: 6px; font-weight: bold; }
         button:hover { background: #444; }
+        #btn-full { background: #4a4a4a; border-color: #888; }
         .tip { font-size: 12px; color: #666; margin-top: 10px; }
     </style>
 </head>
@@ -57,6 +68,7 @@
         <div class="btns">
             <button id="btn-main" onclick="startAnim(true)">Lancer l'animation</button>
             <button id="btn-pause" onclick="togglePause()">⏸ / ▶</button>
+            <button id="btn-full" onclick="showFullPattern()">Voir le motif complet</button>
         </div>
         <div class="tip">Appuyez sur <strong>Espace</strong> pour Play/Pause</div>
     </div>
@@ -67,11 +79,13 @@
 
         window.addEventListener('keydown', e => { if(e.code === 'Space') { e.preventDefault(); togglePause(); } });
 
+        // Génération des colonnes de frettes
         for(let f=4; f<=18; f++) {
             let col = document.createElement('div');
             col.className = 'fret-column';
             col.id = `fret-col-${f}`;
 
+            // Points de repère
             if([5, 7, 9, 15, 17].includes(f)) {
                 let d = document.createElement('div'); d.className = 'dot single'; col.appendChild(d);
             } else if(f === 12) {
@@ -79,6 +93,7 @@
                 let d2 = document.createElement('div'); d2.className = 'dot double-bottom'; col.appendChild(d2);
             }
 
+            // Zones pour les notes
             for(let s=0; s<6; s++) {
                 let n = document.createElement('div'); n.className = 'note'; n.id = `s${s}-f${f}`;
                 col.appendChild(n);
@@ -95,15 +110,52 @@
             {slide:true,s:5,targetBetween:[15,16],col:'#e67e22'}, {s:5,f:17,c:'root-final',drawH:true,color:'#e67e22'}
         ];
 
+        function resetBoard() {
+            clearTimeout(timer);
+            document.querySelectorAll('.note').forEach(n=>n.className='note');
+            document.querySelectorAll('.slide-text, .h-line').forEach(el=>el.remove());
+            currentIndex = 0; paused = false; started = false;
+        }
+
         function startAnim(reset) {
-            if(reset) {
-                clearTimeout(timer);
-                document.querySelectorAll('.note').forEach(n=>n.className='note');
-                document.querySelectorAll('.slide-text, .h-line').forEach(el=>el.remove());
-                currentIndex=0; paused=false; started=true;
-                document.getElementById('btn-main').innerText="Relancer l'animation";
+            if(reset) resetBoard();
+            if(!started) {
+                started = true;
+                document.getElementById('btn-main').innerText = "Relancer l'animation";
                 nextStep();
-            } else if(!started){ started=true; document.getElementById('btn-main').innerText="Relancer l'animation"; nextStep(); }
+            }
+        }
+
+        function drawSlide(step) {
+            const t=document.createElement('div'); t.className='slide-text'; t.innerText='GLISSÉ'; t.style.backgroundColor=step.col;
+            let targetCol = step.targetBetween ? document.getElementById(`fret-col-${step.targetBetween[0]}`) : document.getElementById(`fret-col-${step.targetX}`);
+            let px = targetCol.offsetLeft + (step.targetBetween ? 48 : 32);
+            t.style.left=px+"px"; 
+            t.style.top=(document.getElementById(`s${step.s}-f4`).offsetTop + 11)+"px";
+            board.appendChild(t);
+        }
+
+        function showFullPattern() {
+            resetBoard();
+            trajet.forEach((step, index) => {
+                if(step.slide) {
+                    drawSlide(step);
+                } else {
+                    const el = document.getElementById(`s${step.s}-f${step.f}`);
+                    if(el) el.classList.add(step.c);
+                    if(step.drawH) {
+                        if(step.c === 'root-final') {
+                            drawLine(`s5-f${trajet[index-2].f}`, `s5-f${step.f}`, step.color);
+                        } else {
+                            const s=step.s-1, f1=trajet[index-5].f, f2=trajet[index-4].f, f3=trajet[index-2].f, f4=trajet[index-1].f;
+                            drawLine(`s${s}-f${f1}`,`s${s}-f${f2}`,step.color); drawLine(`s${s}-f${f2}`,`s${s}-f${f3}`,step.color);
+                            drawLine(`s${s}-f${f2}`,`s${step.s}-f${f4}`,step.color); drawLine(`s${step.s}-f${f4}`,`s${step.s}-f${step.f}`,step.color);
+                        }
+                    }
+                }
+            });
+            started = true;
+            document.getElementById('btn-main').innerText = "Relancer l'animation";
         }
 
         function togglePause() { if(!started) startAnim(false); else paused = !paused; }
@@ -119,13 +171,22 @@
             if(currentIndex>=trajet.length) return; if(paused){ timer=setTimeout(nextStep,100); return; }
             let step=trajet[currentIndex];
             if(step.slide){
-                const t=document.createElement('div'); t.className='slide-text'; t.innerText='GLISSÉ'; t.style.backgroundColor=step.col;
-                let px = step.targetBetween ? document.getElementById(`fret-col-${step.targetBetween[0]}`).offsetLeft+48 : document.getElementById(`fret-col-${step.targetX}`).offsetLeft+32;
-                t.style.left=px+"px"; t.style.top=(document.getElementById(`s${step.s}-f4`).offsetTop+11)+"px";
-                board.appendChild(t); currentIndex++; timer=setTimeout(nextStep, 700);
+                drawSlide(step);
+                currentIndex++; timer=setTimeout(nextStep, 700);
             } else {
                 const el=document.getElementById(`s${step.s}-f${step.f}`); if(el) el.classList.add(step.c);
                 if(step.drawH){
                     if(step.c === 'root-final') {
-                        const f_avant = trajet[currentIndex-2].f;
-                        drawLine(`s5
+                        drawLine(`s5-f${trajet[currentIndex-2].f}`, `s5-f${step.f}`, step.color);
+                    } else {
+                        const s=step.s-1, f1=trajet[currentIndex-5].f, f2=trajet[currentIndex-4].f, f3=trajet[currentIndex-2].f, f4=trajet[currentIndex-1].f;
+                        drawLine(`s${s}-f${f1}`,`s${s}-f${f2}`,step.color); drawLine(`s${s}-f${f2}`,`s${s}-f${f3}`,step.color);
+                        drawLine(`s${s}-f${f2}`,`s${step.s}-f${f4}`,step.color); drawLine(`s${step.s}-f${f4}`,`s${step.s}-f${step.f}`,step.color);
+                    }
+                }
+                currentIndex++; timer=setTimeout(nextStep, step.wait||500);
+            }
+        }
+    </script>
+</body>
+</html>
