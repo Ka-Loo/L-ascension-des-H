@@ -8,10 +8,16 @@
         .fretboard-wrapper { display: flex; background: #2d1b10; padding: 25px; border-radius: 10px; border: 2px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
         .labels { display: flex; flex-direction: column-reverse; justify-content: space-between; height: 180px; margin-right: 15px; font-weight: bold; color: #aaa; padding: 5px 0; }
         
-        /* Le manche avec son sillet à gauche */
-        .fretboard { display: flex; background: #3d2b1f; border-left: 6px solid #888; position: relative; height: 180px; }
+        /* Manche avec Texture Bois */
+        .fretboard { 
+            display: flex; 
+            background: #3d2b1f linear-gradient(90deg, rgba(50,30,20,0.4) 0%, rgba(70,45,30,0.4) 50%, rgba(50,30,20,0.4) 100%);
+            border-left: 6px solid #888; 
+            position: relative; 
+            height: 180px; 
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        }
         
-        /* Chaque frette est bien délimitée par border-right */
         .fret-column { 
             display: flex; flex-direction: column-reverse; 
             border-right: 2px solid #666; 
@@ -27,17 +33,26 @@
         .dot.double-bottom { bottom: 25%; }
         .dot.single { top: 50%; transform: translate(-50%, -50%); }
 
-        /* Les cordes passent par-dessus tout */
         .string-line { position: absolute; left: 0; width: 100%; height: 2px; background: rgba(200,200,200,0.3); z-index: 1; pointer-events: none; }
 
-        .note { width: 22px; height: 22px; border-radius: 50%; margin: 0 auto; z-index: 5; transition: 0.3s; display: flex; align-items: center; justify-content: center; font-size: 0px; border: 1px solid transparent; background: transparent; }
-        .h1 { background: #3498db !important; box-shadow: 0 0 12px #3498db; border-color: white; }
-        .h2 { background: #2ecc71 !important; box-shadow: 0 0 12px #2ecc71; border-color: white; }
-        .h3 { background: #9b59b6 !important; box-shadow: 0 0 12px #9b59b6; border-color: white; }
-        .root-final { background: #e67e22 !important; box-shadow: 0 0 18px #e67e22; border: 2px solid white; transform: scale(1.0); }
+        /* Notes en Z-INDEX 5 pour être au-dessus */
+        .note { width: 24px; height: 24px; border-radius: 50%; margin: 0 auto; z-index: 5; transition: 0.3s; display: flex; align-items: center; justify-content: center; font-size: 0px; border: 1px solid transparent; background: transparent; position: relative;}
+        .h1 { background: #3498db !important; box-shadow: 0 0 15px #3498db; border-color: white; }
+        .h2 { background: #2ecc71 !important; box-shadow: 0 0 15px #2ecc71; border-color: white; }
+        .h3 { background: #9b59b6 !important; box-shadow: 0 0 15px #9b59b6; border-color: white; }
+        .root-final { background: #e67e22 !important; box-shadow: 0 0 20px #e67e22; border: 2px solid white; }
 
         .slide-text { position: absolute; font-size: 10px; font-weight: bold; color: white; padding: 2px 6px; border-radius: 3px; border: 1px solid white; z-index: 25; pointer-events: none; transform: translate(-50%, -50%); white-space: nowrap; }
-        .h-line { position: absolute; z-index: 4; pointer-events: none; height: 2px; transform-origin: left center; }
+        
+        /* Traits en Z-INDEX 3 avec Lueur */
+        .h-line { 
+            position: absolute; 
+            z-index: 3; 
+            pointer-events: none; 
+            height: 3px; 
+            transform-origin: left center; 
+            filter: blur(0.5px); /* Légère diffusion pour le réalisme */
+        }
 
         .controls { margin-top: 50px; display: flex; gap: 15px; flex-direction: column; align-items: center;}
         .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
@@ -79,13 +94,11 @@
 
         window.addEventListener('keydown', e => { if(e.code === 'Space') { e.preventDefault(); togglePause(); } });
 
-        // Génération des colonnes de frettes
         for(let f=4; f<=18; f++) {
             let col = document.createElement('div');
             col.className = 'fret-column';
             col.id = `fret-col-${f}`;
 
-            // Points de repère
             if([5, 7, 9, 15, 17].includes(f)) {
                 let d = document.createElement('div'); d.className = 'dot single'; col.appendChild(d);
             } else if(f === 12) {
@@ -93,7 +106,6 @@
                 let d2 = document.createElement('div'); d2.className = 'dot double-bottom'; col.appendChild(d2);
             }
 
-            // Zones pour les notes
             for(let s=0; s<6; s++) {
                 let n = document.createElement('div'); n.className = 'note'; n.id = `s${s}-f${f}`;
                 col.appendChild(n);
@@ -131,7 +143,7 @@
             let targetCol = step.targetBetween ? document.getElementById(`fret-col-${step.targetBetween[0]}`) : document.getElementById(`fret-col-${step.targetX}`);
             let px = targetCol.offsetLeft + (step.targetBetween ? 48 : 32);
             t.style.left=px+"px"; 
-            t.style.top=(document.getElementById(`s${step.s}-f4`).offsetTop + 11)+"px";
+            t.style.top=(document.getElementById(`s${step.s}-f4`).offsetTop + 12)+"px";
             board.appendChild(t);
         }
 
@@ -162,9 +174,11 @@
 
         function drawLine(idS, idE, col) {
             const s=document.getElementById(idS), e=document.getElementById(idE), l=document.createElement('div');
-            l.className='h-line'; const x1=s.offsetLeft+11+s.parentElement.offsetLeft, y1=s.offsetTop+11, x2=e.offsetLeft+11+e.parentElement.offsetLeft, y2=e.offsetTop+11;
+            l.className='h-line'; const x1=s.offsetLeft+12+s.parentElement.offsetLeft, y1=s.offsetTop+12, x2=e.offsetLeft+12+e.parentElement.offsetLeft, y2=e.offsetTop+12;
             const dist=Math.sqrt((x2-x1)**2+(y2-y1)**2), ang=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
-            l.style.width=dist+"px"; l.style.left=x1+"px"; l.style.top=y1+"px"; l.style.transform=`rotate(${ang}deg)`; l.style.backgroundColor=col; l.style.boxShadow=`0 0 5px ${col}`; board.appendChild(l);
+            l.style.width=dist+"px"; l.style.left=x1+"px"; l.style.top=y1+"px"; l.style.transform=`rotate(${ang}deg)`; l.style.backgroundColor=col; 
+            l.style.boxShadow=`0 0 12px ${col}`; // Lueur ajoutée ici
+            board.appendChild(l);
         }
 
         function nextStep() {
