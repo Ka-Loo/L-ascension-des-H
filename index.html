@@ -11,11 +11,11 @@
         /* Manche avec Texture Bois */
         .fretboard { 
             display: flex; 
-            background: #3d2b1f linear-gradient(90deg, rgba(50,30,20,0.4) 0%, rgba(70,45,30,0.4) 50%, rgba(50,30,20,0.4) 100%);
+            background: #3d2b1f linear-gradient(90deg, rgba(50,30,20,0.5) 0%, rgba(80,55,40,0.5) 50%, rgba(50,30,20,0.5) 100%);
             border-left: 6px solid #888; 
             position: relative; 
             height: 180px; 
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
         }
         
         .fret-column { 
@@ -23,7 +23,7 @@
             border-right: 2px solid #666; 
             width: 65px; height: 100%; 
             justify-content: space-around; position: relative; 
-            z-index: 2;
+            z-index: 5; /* Colonnes au-dessus des lignes */
         }
         
         .fret-num { position: absolute; bottom: -25px; width: 100%; text-align: center; font-size: 12px; color: #888; }
@@ -35,8 +35,8 @@
 
         .string-line { position: absolute; left: 0; width: 100%; height: 2px; background: rgba(200,200,200,0.3); z-index: 1; pointer-events: none; }
 
-        /* Notes en Z-INDEX 5 pour être au-dessus */
-        .note { width: 24px; height: 24px; border-radius: 50%; margin: 0 auto; z-index: 5; transition: 0.3s; display: flex; align-items: center; justify-content: center; font-size: 0px; border: 1px solid transparent; background: transparent; position: relative;}
+        /* Notes forcées au premier plan */
+        .note { width: 24px; height: 24px; border-radius: 50%; margin: 0 auto; z-index: 10; transition: 0.3s; display: flex; align-items: center; justify-content: center; font-size: 0px; border: 1px solid transparent; background: transparent; position: relative;}
         .h1 { background: #3498db !important; box-shadow: 0 0 15px #3498db; border-color: white; }
         .h2 { background: #2ecc71 !important; box-shadow: 0 0 15px #2ecc71; border-color: white; }
         .h3 { background: #9b59b6 !important; box-shadow: 0 0 15px #9b59b6; border-color: white; }
@@ -44,14 +44,13 @@
 
         .slide-text { position: absolute; font-size: 10px; font-weight: bold; color: white; padding: 2px 6px; border-radius: 3px; border: 1px solid white; z-index: 25; pointer-events: none; transform: translate(-50%, -50%); white-space: nowrap; }
         
-        /* Traits en Z-INDEX 3 avec Lueur */
+        /* Traits en arrière-plan avec lueur */
         .h-line { 
             position: absolute; 
-            z-index: 3; 
+            z-index: 2; 
             pointer-events: none; 
-            height: 3px; 
+            height: 4px; 
             transform-origin: left center; 
-            filter: blur(0.5px); /* Légère diffusion pour le réalisme */
         }
 
         .controls { margin-top: 50px; display: flex; gap: 15px; flex-direction: column; align-items: center;}
@@ -167,18 +166,18 @@
                 }
             });
             started = true;
-            document.getElementById('btn-main').innerText = "Relancer l'animation";
         }
 
         function togglePause() { if(!started) startAnim(false); else paused = !paused; }
 
         function drawLine(idS, idE, col) {
             const s=document.getElementById(idS), e=document.getElementById(idE), l=document.createElement('div');
-            l.className='h-line'; const x1=s.offsetLeft+12+s.parentElement.offsetLeft, y1=s.offsetTop+12, x2=e.offsetLeft+12+e.parentElement.offsetLeft, y2=e.offsetTop+12;
+            l.className='h-line'; 
+            const x1=s.offsetLeft+12+s.parentElement.offsetLeft, y1=s.offsetTop+12, x2=e.offsetLeft+12+e.parentElement.offsetLeft, y2=e.offsetTop+12;
             const dist=Math.sqrt((x2-x1)**2+(y2-y1)**2), ang=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
             l.style.width=dist+"px"; l.style.left=x1+"px"; l.style.top=y1+"px"; l.style.transform=`rotate(${ang}deg)`; l.style.backgroundColor=col; 
-            l.style.boxShadow=`0 0 12px ${col}`; // Lueur ajoutée ici
-            board.appendChild(l);
+            l.style.boxShadow=`0 0 15px ${col}`;
+            board.prepend(l); // Insère AU DÉBUT pour être derrière tout le reste
         }
 
         function nextStep() {
