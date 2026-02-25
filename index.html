@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Cours Guitare - Le motif en "h"</title>
+    <title>Cours Guitare - Ascension Pentatonique "h"</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .fretboard-wrapper { display: flex; background: #2d1b10; padding: 25px; border-radius: 10px; border: 2px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
@@ -12,14 +12,25 @@
         .fret-column { display: flex; flex-direction: column-reverse; border-right: 2px solid #666; width: 65px; height: 180px; justify-content: space-around; position: relative; }
         .fret-num { position: absolute; bottom: -25px; width: 100%; text-align: center; font-size: 12px; color: #888; }
         
+        .dot { position: absolute; background: rgba(255,255,255,0.15); width: 14px; height: 14px; border-radius: 50%; left: 50%; transform: translateX(-50%); z-index: 0; }
+        .dot.double-top { top: 25%; }
+        .dot.double-bottom { bottom: 25%; }
+        .dot.single { top: 50%; transform: translate(-50%, -50%); }
+
         .string-line { position: absolute; left: 0; width: 100%; height: 2px; background: rgba(200,200,200,0.3); z-index: 1; pointer-events: none; }
 
-        .note { width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.6); margin: 0 auto; z-index: 5; transition: 0.3s; display: flex; align-items: center; justify-content: center; font-size: 0px; border: 1px solid transparent; }
+        .note { 
+            width: 22px; height: 22px; border-radius: 50%; 
+            margin: 0 auto; z-index: 5; transition: 0.3s; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 0px; border: 1px solid transparent;
+            background: transparent;
+        }
         
-        .h1 { background: #3498db !important; box-shadow: 0 0 10px #3498db; border-color: white; }
-        .h2 { background: #2ecc71 !important; box-shadow: 0 0 10px #2ecc71; border-color: white; }
-        .h3 { background: #9b59b6 !important; box-shadow: 0 0 10px #9b59b6; border-color: white; }
-        .root-final { background: #f1c40f !important; box-shadow: 0 0 15px #f1c40f; border: 2px solid white; transform: scale(1.2); }
+        .h1 { background: #3498db !important; box-shadow: 0 0 12px #3498db; border-color: white; }
+        .h2 { background: #2ecc71 !important; box-shadow: 0 0 12px #2ecc71; border-color: white; }
+        .h3 { background: #9b59b6 !important; box-shadow: 0 0 12px #9b59b6; border-color: white; }
+        .root-final { background: #e67e22 !important; box-shadow: 0 0 18px #e67e22; border: 2px solid white; transform: scale(1.2); }
 
         .slide-text {
             position: absolute; font-size: 10px; font-weight: bold; color: white;
@@ -28,21 +39,19 @@
             white-space: nowrap;
         }
 
-        /* Traits pour dessiner le H */
-        .h-line {
-            position: absolute; z-index: 4; pointer-events: none;
-            height: 2px; transform-origin: left center;
-        }
+        .h-line { position: absolute; z-index: 4; pointer-events: none; height: 2px; transform-origin: left center; }
 
-        .controls { margin-top: 50px; display: flex; gap: 15px; }
+        .controls { margin-top: 50px; display: flex; gap: 15px; flex-direction: column; align-items: center;}
+        .btns { display: flex; gap: 15px; }
         button { padding: 12px 24px; cursor: pointer; background: #333; color: white; border: 1px solid #555; border-radius: 6px; font-weight: bold; min-width: 120px; }
         button:hover { background: #444; }
+        .tip { font-size: 12px; color: #666; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <h2>L'Ascension Pentatonique : Tracé du "h"</h2>
-    <p>Visualisation géométrique des motifs (La Majeur)</p>
+    <h2>L'Ascension Pentatonique : Motif en "h"</h2>
+    <p>La barre d'espace contrôle la lecture.</p>
 
     <div class="fretboard-wrapper">
         <div class="labels"><span>E</span><span>A</span><span>D</span><span>G</span><span>B</span><span>e</span></div>
@@ -57,56 +66,60 @@
     </div>
 
     <div class="controls">
-        <button id="btn-main" onclick="startAnim(true)">Lancer l'animation</button>
-        <button id="btn-pause" onclick="togglePause()">⏸ / ▶</button>
+        <div class="btns">
+            <button id="btn-main" onclick="startAnim(true)">Lancer l'animation</button>
+            <button id="btn-pause" onclick="togglePause()">⏸ / ▶</button>
+        </div>
+        <div class="tip">Astuce : Appuyez sur <strong>Espace</strong> pour Play/Pause</div>
     </div>
 
     <script>
         const board = document.getElementById('fretboard');
-        let timer = null;
-        let currentIndex = 0;
-        let paused = false;
-        let started = false;
+        let timer = null; let currentIndex = 0; let paused = false; let started = false;
 
-        // Création du manche
+        // Écouteur de la barre d'espace
+        window.addEventListener('keydown', function(e) {
+            if(e.code === 'Space') {
+                e.preventDefault(); // Empêche de faire défiler la page vers le bas
+                togglePause();
+            }
+        });
+
         for(let f=4; f<=18; f++) {
             let col = document.createElement('div');
             col.className = 'fret-column';
             col.id = `fret-col-${f}`;
+
+            if([3, 5, 7, 9, 15, 17, 19].includes(f)) {
+                let d = document.createElement('div'); d.className = 'dot single'; col.appendChild(d);
+            } else if(f === 12) {
+                let d1 = document.createElement('div'); d1.className = 'dot double-top'; col.appendChild(d1);
+                let d2 = document.createElement('div'); d2.className = 'dot double-bottom'; col.appendChild(d2);
+            }
+
             for(let s=0; s<6; s++) {
-                let n = document.createElement('div');
-                n.className = 'note';
-                n.id = `s${s}-f${f}`;
+                let n = document.createElement('div'); n.className = 'note'; n.id = `s${s}-f${f}`;
                 col.appendChild(n);
             }
-            let num = document.createElement('div');
-            num.className = 'fret-num';
-            num.innerText = f;
+            let num = document.createElement('div'); num.className = 'fret-num'; num.innerText = f;
             col.appendChild(num);
             board.appendChild(col);
         }
 
         const trajet = [
-            // h1 (Bleu)
-            {id:1, s:0, f:5, c:'h1'}, {id:2, s:0, f:7, c:'h1'},
-            {slide:true, s:0, targetX: 8, col: '#3498db'}, 
-            {id:3, s:0, f:9, c:'h1'}, 
-            {id:4, s:1, f:7, c:'h1'}, {id:5, s:1, f:9, c:'h1', drawH: true, color: '#3498db', wait: 1000},
+            {s:0, f:5, c:'h1'}, {s:0, f:7, c:'h1'},
+            {slide:true, s:0, targetX: 8, col: '#3498db'}, {s:0, f:9, c:'h1'},
+            {s:1, f:7, c:'h1'}, {s:1, f:9, c:'h1', drawH: true, color: '#3498db', wait: 1000},
             
-            // h2 (Vert)
-            {id:1, s:2, f:7, c:'h2'}, {id:2, s:2, f:9, c:'h2'},
-            {slide:true, s:2, targetX: 10, col: '#2ecc71'}, 
-            {id:3, s:2, f:11, c:'h2'}, 
-            {id:4, s:3, f:9, c:'h2'}, {id:5, s:3, f:11, c:'h2', drawH: true, color: '#2ecc71', wait: 1000},
+            {s:2, f:7, c:'h2'}, {s:2, f:9, c:'h2'},
+            {slide:true, s:2, targetX: 10, col: '#2ecc71'}, {s:2, f:11, c:'h2'},
+            {s:3, f:9, c:'h2'}, {s:3, f:11, c:'h2', drawH: true, color: '#2ecc71', wait: 1000},
 
-            // h3 (Violet)
-            {id:1, s:4, f:10, c:'h3'}, {id:2, s:4, f:12, c:'h3'},
-            {slide:true, s:4, targetX: 13, col: '#9b59b6'}, 
-            {id:3, s:4, f:14, c:'h3'}, 
-            {id:4, s:5, f:12, c:'h3'}, {id:5, s:5, f:14, c:'h3', drawH: true, color: '#9b59b6'},
+            {s:4, f:10, c:'h3'}, {s:4, f:12, c:'h3'},
+            {slide:true, s:4, targetX: 13, col: '#9b59b6'}, {s:4, f:14, c:'h3'},
+            {s:5, f:12, c:'h3'}, {s:5, f:14, c:'h3', drawH: true, color: '#9b59b6'},
             
-            // Final
-            {slide:true, s:5, targetBetween: [15, 16], col: '#f1c40f'}, {s:5, f:17, c:'root-final'}
+            {slide:true, s:5, targetBetween: [15, 16], col: '#e67e22'}, {s:5, f:17, c:'root-final'}
         ];
 
         function startAnim(forceReset = false) {
@@ -117,14 +130,19 @@
                 currentIndex = 0; paused = false; started = true;
                 document.getElementById('btn-main').innerText = "Relancer l'animation";
                 nextStep();
-            } else if (!started) {
-                started = true;
-                nextStep();
+            } else if (!started) { 
+                started = true; 
+                document.getElementById('btn-main').innerText = "Relancer l'animation";
+                nextStep(); 
             }
         }
 
         function togglePause() { 
-            if (!started) startAnim(true); else paused = !paused; 
+            if (!started) {
+                startAnim(false); 
+            } else {
+                paused = !paused; 
+            }
         }
 
         function drawLine(idStart, idEnd, color) {
@@ -132,70 +150,49 @@
             const end = document.getElementById(idEnd);
             const line = document.createElement('div');
             line.className = 'h-line';
-            
-            const x1 = start.offsetLeft + 10 + start.parentElement.offsetLeft;
-            const y1 = start.offsetTop + 10;
-            const x2 = end.offsetLeft + 10 + end.parentElement.offsetLeft;
-            const y2 = end.offsetTop + 10;
-
+            const x1 = start.offsetLeft + 11 + start.parentElement.offsetLeft;
+            const y1 = start.offsetTop + 11;
+            const x2 = end.offsetLeft + 11 + end.parentElement.offsetLeft;
+            const y2 = end.offsetTop + 11;
             const dist = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
             const angle = Math.atan2(y2-y1, x2-x1) * 180 / Math.PI;
-
-            line.style.width = dist + "px";
-            line.style.left = x1 + "px";
-            line.style.top = y1 + "px";
-            line.style.transform = `rotate(${angle}deg)`;
-            line.style.backgroundColor = color;
-            line.style.boxShadow = `0 0 5px ${color}`;
-            board.appendChild(line);
+            line.style.width = dist + "px"; line.style.left = x1 + "px"; line.style.top = y1 + "px";
+            line.style.transform = `rotate(${angle}deg)`; line.style.backgroundColor = color;
+            line.style.boxShadow = `0 0 5px ${color}`; board.appendChild(line);
         }
 
         function nextStep() {
             if (currentIndex >= trajet.length) return;
             if (paused) { timer = setTimeout(nextStep, 100); return; }
-
             let step = trajet[currentIndex];
             if (step.slide) {
                 const txt = document.createElement('div');
-                txt.className = 'slide-text';
-                txt.innerText = 'GLISSÉ';
-                txt.style.backgroundColor = step.col;
+                txt.className = 'slide-text'; txt.innerText = 'GLISSÉ'; txt.style.backgroundColor = step.col;
                 let posX;
                 if (step.targetBetween) {
                     const c1 = document.getElementById(`fret-col-${step.targetBetween[0]}`);
                     const c2 = document.getElementById(`fret-col-${step.targetBetween[1]}`);
                     posX = c1.offsetLeft + (c2.offsetLeft - c1.offsetLeft) / 2 + 32;
                 } else {
-                    const col = document.getElementById(`fret-col-${step.targetX}`);
-                    posX = col.offsetLeft + 32; 
+                    const col = document.getElementById(`fret-col-${step.targetX}`); posX = col.offsetLeft + 32; 
                 }
                 const rowNote = document.getElementById(`s${step.s}-f4`);
-                txt.style.left = posX + "px";
-                txt.style.top = (rowNote.offsetTop + 10) + "px";
+                txt.style.left = posX + "px"; txt.style.top = (rowNote.offsetTop + 11) + "px";
                 board.appendChild(txt);
-                currentIndex++;
-                timer = setTimeout(nextStep, 700);
+                currentIndex++; timer = setTimeout(nextStep, 700);
             } else {
                 const el = document.getElementById(`s${step.s}-f${step.f}`);
                 if(el) el.classList.add(step.c);
-                
-                // Si le "h" est fini, on relie les points
                 if (step.drawH) {
-                    const s = step.s - 1; // Corde précédente pour retrouver les notes 1, 2, 3
-                    const f_start = trajet[currentIndex-5].f; // f de la note 1
-                    const f_2 = trajet[currentIndex-4].f; // f de la note 2
-                    const f_3 = trajet[currentIndex-2].f; // f de la note 3 (après slide)
-                    const f_4 = trajet[currentIndex-1].f; // f de la note 4 (corde actuelle)
-                    const f_5 = step.f; // f de la note 5 (corde actuelle)
-
-                    drawLine(`s${s}-f${f_start}`, `s${s}-f${f_2}`, step.color); // 1-2
-                    drawLine(`s${s}-f${f_2}`, `s${s}-f${f_3}`, step.color);     // 2-3
-                    drawLine(`s${s}-f${f_2}`, `s${step.s}-f${f_4}`, step.color); // 2-4
-                    drawLine(`s${step.s}-f${f_4}`, `s${step.s}-f${f_5}`, step.color); // 4-5
+                    const s = step.s - 1;
+                    const f1 = trajet[currentIndex-5].f; const f2 = trajet[currentIndex-4].f;
+                    const f3 = trajet[currentIndex-2].f; const f4 = trajet[currentIndex-1].f;
+                    drawLine(`s${s}-f${f1}`, `s${s}-f${f2}`, step.color);
+                    drawLine(`s${s}-f${f2}`, `s${s}-f${f3}`, step.color);
+                    drawLine(`s${s}-f${f2}`, `s${step.s}-f${f4}`, step.color);
+                    drawLine(`s${step.s}-f${f4}`, `s${step.s}-f${step.f}`, step.color);
                 }
-
-                currentIndex++;
-                timer = setTimeout(nextStep, step.wait || 500);
+                currentIndex++; timer = setTimeout(nextStep, step.wait || 500);
             }
         }
     </script>
