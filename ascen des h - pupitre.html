@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Pupitre Pentatonique - Alignement Axial</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .fretboard-wrapper { display: flex; background: #2d1b10; padding: 25px 25px 40px 25px; border-radius: 10px; border: 2px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
+        
+        .labels { position: relative; width: 20px; height: 180px; margin-right: 15px; font-weight: bold; color: #aaa; }
+        .labels span { position: absolute; width: 100%; text-align: center; height: 30px; display: flex; align-items: center; justify-content: center; }
+        .l-e { top: 0px; } .l-B { top: 31px; } .l-G { top: 62px; } .l-D { top: 93px; } .l-A { top: 124px; } .l-E { top: 155px; }
+
+        .fretboard { display: flex; background: #3d2b1f linear-gradient(90deg, rgba(50,30,20,0.5) 0%, rgba(80,55,40,0.5) 50%, rgba(50,30,20,0.5) 100%); border-left: 6px solid #888; position: relative; height: 180px; box-shadow: inset 0 0 50px rgba(0,0,0,0.8); }
+        .fret-column { display: flex; flex-direction: column-reverse; width: 65px; height: 100%; justify-content: space-around; position: relative; z-index: 5; border-right: 2px solid #666; }
+        .fret-number { position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #777; font-weight: bold; }
+        .string-line { position: absolute; left: 0; width: 100%; height: 2px; background: rgba(200,200,200,0.3); z-index: 1; pointer-events: none; }
+        
+        .note-placeholder { width: 24px; height: 24px; margin: 0 auto; visibility: hidden; }
+
+        .active-note { 
+            position: absolute; width: 24px; height: 24px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 11px; font-weight: 900; color: white; 
+            border: 1.5px solid white; z-index: 20;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.6);
+            transform: translateX(-50%) translateY(1px); left: 50%;
+        }
+        
+        .h-note { width: 28px; height: 28px; z-index: 30; border-width: 2px; box-shadow: 0 0 10px white; font-size: 12px; }
+
+        .c-midnight { background-color: #1a2a6c; } .c-lightblue { background-color: #2584c4; } 
+        .c-green { background-color: #27af61; } .c-purple { background-color: #7d3cff; } .c-orange { background-color: #e67e22; }
+
+        .controls { margin-top: 50px; display: flex; flex-direction: column; gap: 15px; align-items: flex-start; }
+        
+        .btn-row { display: flex; gap: 15px; }
+        
+        /* CALCUL DU QUINCONCE SYMÉTRIQUE */
+        /* Centre de Pos 3 (bas) = (100+15) * 2 + 50 = 280px */
+        /* Centre de h2|h3 (haut) = (100+15) * 2 = 230px */
+        /* Décalage nécessaire = 280 - 230 = 50px (ou 57.5px selon le rendu de la marge interne) */
+        .top-row { margin-left: 57.5px; } 
+
+        button { width: 100px; padding: 10px 0; background: #222; color: #666; border: 1.2px solid #444; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s; text-align: center; }
+        button.active { color: white; border-color: white; transform: translateY(-2px); }
+        
+        button.active.h-btn { background: #444; box-shadow: 0 0 10px white; }
+        button.active[data-p="2"] { background: #1a2a6c; }
+        button.active[data-p="3"] { background: #2584c4; }
+        button.active[data-p="4"] { background: #27af61; }
+        button.active[data-p="5"] { background: #7d3cff; }
+        button.active[data-p="1"] { background: #e67e22; }
+
+        .slide-text { 
+            position: absolute; font-size: 10px; font-weight: 900; color: white; padding: 4px 8px; 
+            border-radius: 4px; border: 1.5px solid white; z-index: 40; transform: translate(-50%, -50%); 
+            pointer-events: none; box-shadow: 3px 3px 8px rgba(0,0,0,0.7); text-shadow: 2px 2px 3px black;
+        }
+
+        .legend { margin-top: 30px; padding: 15px; border-top: 1px solid #333; color: #888; font-size: 13px; display: flex; gap: 20px; }
+        .legend b { color: #ddd; }
+    </style>
+</head>
+<body>
+
+    <h2 style="color: #ddd;">Console de Pilotage : Ascension</h2>
+
+    <div class="fretboard-wrapper">
+        <div class="labels">
+            <span class="l-e">e</span><span class="l-B">B</span><span class="l-G">G</span>
+            <span class="l-D">D</span><span class="l-A">A</span><span class="l-E">E</span>
+        </div>
+        <div id="fretboard" class="fretboard">
+            <div class="string-line" style="top:15px"></div>
+            <div class="string-line" style="top:45px"></div>
+            <div class="string-line" style="top:75px"></div>
+            <div class="string-line" style="top:105px"></div>
+            <div class="string-line" style="top:135px"></div>
+            <div class="string-line" style="top:165px"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="btn-row top-row">
+            <button class="h-btn" onclick="toggleH(0, this)">h 1</button>
+            <button class="h-btn" onclick="toggleH(1, this)">h 2</button>
+            <button class="h-btn" onclick="toggleH(2, this)">h 3</button>
+            <button class="h-btn" onclick="toggleH(3, this)">FINAL</button>
+        </div>
+        <div class="btn-row">
+            <button data-p="2" onclick="togglePos(2, this)">Pos 2</button>
+            <button data-p="3" onclick="togglePos(3, this)">Pos 3</button>
+            <button data-p="4" onclick="togglePos(4, this)">Pos 4</button>
+            <button data-p="5" onclick="togglePos(5, this)">Pos 5</button>
+            <button data-p="1" onclick="togglePos(1, this)">Pos 1</button>
+        </div>
+    </div>
+
+    <div class="legend">
+        <span><b>T</b> = Tonique</span>
+        <span><b>2</b> = Seconde</span>
+        <span><b>3</b> = Tierce</span>
+        <span><b>5</b> = Quinte</span>
+        <span><b>6</b> = Sixte</span>
+    </div>
+
+<script>
+    const board = document.getElementById('fretboard');
+    
+    const posData = {
+        2: { color: 'c-midnight', notes: [[1,5],[1,7],[2,4],[2,7],[3,4],[3,7],[4,4],[4,6],[5,5],[5,7],[6,5],[6,7]] },
+        3: { color: 'c-lightblue', notes: [[1,7],[1,9],[2,7],[2,9],[3,7],[3,9],[4,6],[4,9],[5,7],[5,10],[6,7],[6,9]] },
+        4: { color: 'c-green', notes: [[1,9],[1,12],[2,9],[2,12],[3,9],[3,11],[4,9],[4,11],[5,10],[5,12],[6,9],[6,12]] },
+        5: { color: 'c-purple', notes: [[1,12],[1,14],[2,12],[2,14],[3,11],[3,14],[4,11],[4,14],[5,12],[5,14],[6,12],[6,14]] },
+        1: { color: 'c-orange', notes: [[1,14],[1,17],[2,14],[2,16],[3,14],[3,16],[4,14],[4,16],[5,14],[5,17],[6,14],[6,17]] }
+    };
+
+    const hMoves = [
+        { color: 'c-lightblue', steps: [[1,5,'3'],[1,7,'5'],[1,9,'6'],[2,7,'T'],[2,9,'3']], slide: {s:1, f1:7, f2:9} },
+        { color: 'c-green', steps: [[3,7,'6'],[3,9,'T'],[3,11,'2'],[4,9,'3'],[4,11,'5']], slide: {s:3, f1:9, f2:11} },
+        { color: 'c-purple', steps: [[5,10,'T'],[5,12,'2'],[5,14,'3'],[6,12,'6'],[6,14,'T']], slide: {s:5, f1:12, f2:14} },
+        { color: 'c-orange', steps: [[6,14,'T'],[6,17,'2']], slide: {s:6, f1:14, f2:17} }
+    ];
+
+    for(let f=2; f<=18; f++) {
+        let col = document.createElement('div'); col.className = 'fret-column'; col.id = `f-col-${f}`;
+        let num = document.createElement('div'); num.className = 'fret-number'; num.innerText = f;
+        col.appendChild(num);
+        for(let s=1; s<=6; s++) {
+            let p = document.createElement('div'); p.className = 'note-placeholder'; p.id = `target-s${s}-f${f}`;
+            col.appendChild(p);
+        } board.appendChild(col);
+    }
+
+    function togglePos(posIdx, btn) {
+        const data = posData[posIdx];
+        const isActive = btn.classList.toggle('active');
+        const gName = `g-pos-${posIdx}`;
+        data.notes.forEach(n => {
+            const anchor = document.getElementById(`target-s${n[0]}-f${n[1]}`);
+            if(isActive) {
+                const el = document.createElement('div');
+                el.className = `active-note ${data.color} ${gName}`;
+                el.style.top = anchor.offsetTop + "px";
+                anchor.parentElement.appendChild(el);
+            } else {
+                anchor.parentElement.querySelectorAll(`.${gName}`).forEach(e => e.remove());
+            }
+        });
+    }
+
+    function toggleH(hIdx, btn) {
+        const h = hMoves[hIdx];
+        const isActive = btn.classList.toggle('active');
+        const gName = `g-h-${hIdx}`;
+        if(isActive) {
+            h.steps.forEach(step => {
+                const anchor = document.getElementById(`target-s${step[0]}-f${step[1]}`);
+                const el = document.createElement('div');
+                el.className = `active-note h-note ${h.color} ${gName}`;
+                el.innerText = step[2];
+                el.style.top = (anchor.offsetTop - 2) + "px";
+                anchor.parentElement.appendChild(el);
+            });
+            if(h.slide) {
+                const s = h.slide;
+                const t = document.createElement('div'); t.className = `slide-text ${gName}`;
+                t.innerText = 'GLISSÉ';
+                const col1 = document.getElementById(`f-col-${s.f1}`), col2 = document.getElementById(`f-col-${s.f2}`);
+                const anchor = document.getElementById(`target-s${s.s}-f${s.f1}`);
+                t.style.left = (col1.offsetLeft + (col2.offsetLeft - col1.offsetLeft) / 2 + 32) + "px";
+                t.style.top = (anchor.offsetTop + 12) + "px";
+                t.style.background = getHColor(h.color);
+                board.appendChild(t);
+            }
+        } else {
+            document.querySelectorAll(`.${gName}`).forEach(e => e.remove());
+        }
+    }
+    function getHColor(cls) { return {'c-midnight':'#1a2a6c','c-lightblue':'#2584c4','c-green':'#27af61','c-purple':'#7d3cff','c-orange':'#e67e22'}[cls]; }
+</script>
+</body>
+</html>
