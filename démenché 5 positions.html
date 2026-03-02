@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>L'Ascension Pentatonique - Alignement & Tempo</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .fretboard-wrapper { display: flex; background: #2d1b10; padding: 25px 25px 40px 25px; border-radius: 10px; border: 2px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
+        
+        /* Alignement des cordes à vide avec décalage croissant */
+        .labels { position: relative; width: 20px; height: 180px; margin-right: 15px; font-weight: bold; color: #aaa; }
+        .labels span { position: absolute; width: 100%; text-align: center; height: 30px; display: flex; align-items: center; justify-content: center; }
+        .l-e { top: 0px; } 
+        .l-B { top: 31px; } 
+        .l-G { top: 62px; } 
+        .l-D { top: 93px; } 
+        .l-A { top: 124px; } 
+        .l-E { top: 155px; }
+
+        .fretboard { display: flex; background: #3d2b1f linear-gradient(90deg, rgba(50,30,20,0.5) 0%, rgba(80,55,40,0.5) 50%, rgba(50,30,20,0.5) 100%); border-left: 6px solid #888; position: relative; height: 180px; box-shadow: inset 0 0 50px rgba(0,0,0,0.8); }
+        .fret-column { display: flex; flex-direction: column-reverse; width: 65px; height: 100%; justify-content: space-around; position: relative; z-index: 5; border-right: 2px solid #666; }
+        
+        /* Numéros de cases */
+        .fret-number { position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #777; font-weight: bold; }
+        
+        .string-line { position: absolute; left: 0; width: 100%; height: 2px; background: rgba(200,200,200,0.3); z-index: 1; pointer-events: none; }
+        
+        .note { 
+            width: 24px; height: 24px; border-radius: 50%; margin: 0 auto; z-index: 10; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 11px; font-weight: 900; color: white; 
+            border: 1.5px solid white; visibility: hidden; opacity: 0; 
+            transition: opacity 1.5s ease-in-out, transform 0.3s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.6);
+            transform: translateY(1px); 
+        }
+        
+        .c-midnight { background-color: #1a2a6c !important; visibility: visible !important; } 
+        .c-lightblue { background-color: #2584c4 !important; visibility: visible !important; } 
+        .c-green { background-color: #27af61 !important; visibility: visible !important; }
+        .c-purple { background-color: #7d3cff !important; visibility: visible !important; }
+        .c-orange { background-color: #e67e22 !important; visibility: visible !important; }
+
+        .v-70 { opacity: 0.7 !important; border-color: rgba(255,255,255,0.3) !important; } 
+        .v-100 { opacity: 1 !important; border-color: white !important; box-shadow: 0 0 15px currentColor; transform: scale(1.1) translateY(1px) !important; transition: opacity 0.3s, transform 0.3s !important; }
+        .v-fade-out { opacity: 0 !important; transition: opacity 1.5s ease-in-out !important; }
+        
+        .controls { margin-top: 50px; display: flex; flex-direction: column; gap: 20px; align-items: center; }
+        .btns-main button { padding: 10px 25px; font-size: 20px; background: #333; color: white; border: 1px solid #555; border-radius: 6px; cursor: pointer; margin: 0 10px; transition: all 0.2s; }
+        button:disabled { opacity: 0.2; cursor: not-allowed; pointer-events: none; filter: grayscale(1); }
+        
+        .btns-pos button { margin: 0 5px; padding: 10px 18px; background: #1a1a1a; color: #666; border: 1px solid #333; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        button.active-pos { background: #444 !important; color: #fff !important; border-color: #eee !important; }
+        
+        .slide-text { 
+            position: absolute; font-size: 10px; font-weight: 900; color: white; padding: 4px 8px; 
+            border-radius: 4px; border: 1.5px solid white; z-index: 30; transform: translate(-50%, -50%); 
+            pointer-events: none; opacity: 0; transition: opacity 1.5s ease-in-out;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.7); text-shadow: 2px 2px 3px rgba(0,0,0,1);
+        }
+        .slide-show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <h2 style="color: #ddd;">L'Ascension Pentatonique</h2>
+
+    <div class="fretboard-wrapper">
+        <div class="labels">
+            <span class="l-e">e</span><span class="l-B">B</span><span class="l-G">G</span>
+            <span class="l-D">D</span><span class="l-A">A</span><span class="l-E">E</span>
+        </div>
+        <div id="fretboard" class="fretboard">
+            <div class="string-line" style="top:15px"></div>
+            <div class="string-line" style="top:45px"></div>
+            <div class="string-line" style="top:75px"></div>
+            <div class="string-line" style="top:105px"></div>
+            <div class="string-line" style="top:135px"></div>
+            <div class="string-line" style="top:165px"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="btns-main">
+            <button id="main-pause" onclick="setPause()" disabled>⏸</button>
+            <button id="main-play" onclick="handlePlay()">▶</button>
+            <button id="main-next" onclick="handleNext()" disabled>▶│</button>
+        </div>
+        <div class="btns-pos" id="pos-buttons"></div>
+    </div>
+
+<script>
+    const board = document.getElementById('fretboard');
+    let loopTimer = null, hTimer = null;
+    let currentPosIdx = null;
+    let isPaused = false;
+    let isHRunning = false;
+
+    const posData = {
+        2: { color: 'c-midnight', notes: [[1,5],[1,7],[2,4],[2,7],[3,4],[3,7],[4,4],[4,6],[5,5],[5,7],[6,5],[6,7]] },
+        3: { color: 'c-lightblue', notes: [[1,7],[1,9],[2,7],[2,9],[3,7],[3,9],[4,6],[4,9],[5,7],[5,10],[6,7],[6,9]] },
+        4: { color: 'c-green', notes: [[1,9],[1,12],[2,9],[2,12],[3,9],[3,11],[4,9],[4,11],[5,10],[5,12],[6,9],[6,12]] },
+        5: { color: 'c-purple', notes: [[1,12],[1,14],[2,12],[2,14],[3,11],[3,14],[4,11],[4,14],[5,12],[5,14],[6,12],[6,14]] },
+        1: { color: 'c-orange', notes: [[1,14],[1,17],[2,14],[2,16],[3,14],[3,16],[4,14],[4,16],[5,14],[5,17],[6,14],[6,17]] }
+    };
+
+    const hMoves = [
+        { start: 2, end: 3, color: 'c-lightblue', steps: [{s:1,f:5},{s:1,f:7},{slide:true, f1:7, f2:9, s:1},{s:1,f:9},{s:2,f:7},{s:2,f:9}] },
+        { start: 3, end: 4, color: 'c-green', steps: [{s:3,f:7},{s:3,f:9},{slide:true, f1:9, f2:11, s:3},{s:3,f:11},{s:4,f:9},{s:4,f:11}] },
+        { start: 4, end: 5, color: 'c-purple', steps: [{s:5,f:10},{s:5,f:12},{slide:true, f1:12, f2:14, s:5},{s:5,f:14},{s:6,f:12},{s:6,f:14}] },
+        { start: 5, end: 1, color: 'c-orange', steps: [{s:6,f:14},{slide:true, f1:14, f2:17, s:6},{s:6,f:17}] }
+    ];
+
+    for(let f=2; f<=18; f++) {
+        let col = document.createElement('div'); col.className = 'fret-column'; col.id = `fret-col-${f}`;
+        // Ajout du numéro de case
+        let num = document.createElement('div'); num.className = 'fret-number'; num.innerText = f;
+        col.appendChild(num);
+        
+        for(let s=1; s<=6; s++) {
+            let n = document.createElement('div'); n.className = 'note'; n.id = `s${s}-f${f}`;
+            col.appendChild(n);
+        }
+        board.appendChild(col);
+    }
+
+    const btnContainer = document.getElementById('pos-buttons');
+    [2, 3, 4, 5, 1].forEach(n => {
+        let b = document.createElement('button'); b.innerText = 'Pos ' + n;
+        b.id = 'btn-pos-' + n; b.onclick = () => startPositionLoop(n);
+        btnContainer.appendChild(b);
+    });
+
+    function updateButtons() {
+        const isRunning = (currentPosIdx !== null || isHRunning);
+        document.getElementById('main-pause').disabled = !isRunning || isPaused;
+        document.getElementById('main-next').disabled = isHRunning;
+        document.getElementById('main-play').disabled = (isRunning && !isPaused);
+    }
+
+    function startPositionLoop(posIdx) {
+        clearInterval(loopTimer);
+        clearTimeout(hTimer);
+        
+        const targetNotesIds = posData[posIdx].notes.map(p => `s${p[0]}-f${p[1]}`);
+        document.querySelectorAll('.note').forEach(n => {
+            if(!targetNotesIds.includes(n.id)) {
+                n.classList.add('v-fade-out');
+                setTimeout(() => { if(n.classList.contains('v-fade-out')) n.className = 'note'; }, 1500);
+            } else {
+                n.classList.remove('v-fade-out');
+            }
+        });
+        document.querySelectorAll('.slide-text').forEach(t => {
+            t.style.opacity = "0";
+            setTimeout(() => t.remove(), 1500);
+        });
+
+        isHRunning = false;
+        isPaused = false;
+        currentPosIdx = posIdx;
+
+        document.querySelectorAll('.btns-pos button').forEach(b => b.classList.remove('active-pos'));
+        document.getElementById('btn-pos-' + posIdx).classList.add('active-pos');
+
+        const data = posData[posIdx];
+        let idx = 0, dir = 1;
+
+        loopTimer = setInterval(() => {
+            if(isPaused) return;
+            data.notes.forEach((p, i) => {
+                const el = document.getElementById(`s${p[0]}-f${p[1]}`);
+                if(el) {
+                    el.className = `note ${data.color} v-70`;
+                    if(i === idx) el.classList.add('v-100');
+                }
+            });
+            idx += dir;
+            if (idx >= data.notes.length) { idx = data.notes.length - 2; dir = -1; }
+            if (idx < 0) { idx = 1; dir = 1; }
+        }, 500);
+        
+        updateButtons();
+    }
+
+    function runHMove(hIdx) {
+        clearInterval(loopTimer);
+        isHRunning = true;
+        updateButtons();
+        const h = hMoves[hIdx];
+        let stepIdx = 0;
+
+        document.querySelectorAll('.note.v-100').forEach(n => n.classList.remove('v-100'));
+
+        function exec() {
+            if(isPaused) { hTimer = setTimeout(exec, 100); return; }
+            if(stepIdx >= h.steps.length) return;
+            const step = h.steps[stepIdx];
+
+            if(step.slide) {
+                const t = document.createElement('div'); t.className = 'slide-text'; t.innerText = 'GLISSÉ';
+                const col1 = document.getElementById(`fret-col-${step.f1}`);
+                const col2 = document.getElementById(`fret-col-${step.f2}`);
+                t.style.left = (col1.offsetLeft + (col2.offsetLeft - col1.offsetLeft) / 2 + 32) + "px";
+                t.style.top = (15 + (6 - step.s) * 30) + "px";
+                t.style.background = getHColor(h.color);
+                board.appendChild(t);
+                setTimeout(() => t.classList.add('slide-show'), 50);
+                stepIdx++; hTimer = setTimeout(exec, 600);
+            } else {
+                const el = document.getElementById(`s${step.s}-f${step.f}`);
+                if(el) {
+                    el.classList.remove('v-fade-out');
+                    el.className = `note ${h.color} v-100`;
+                }
+                
+                if(stepIdx === h.steps.length - 1) {
+                    hTimer = setTimeout(() => {
+                        if(isHRunning) startPositionLoop(h.end);
+                    }, 1000); 
+                    return;
+                }
+                stepIdx++; hTimer = setTimeout(exec, 600);
+            }
+        }
+        exec();
+    }
+
+    function handlePlay() {
+        if(isPaused) { isPaused = false; updateButtons(); return; }
+        if(!currentPosIdx || currentPosIdx === 1) startPositionLoop(2);
+    }
+
+    function handleNext() {
+        if(currentPosIdx === 1 && !isHRunning) { startPositionLoop(2); return; }
+        if(currentPosIdx && !isHRunning) {
+            runHMove(hMoves.findIndex(h => h.start === currentPosIdx));
+        }
+    }
+
+    function setPause() { isPaused = true; updateButtons(); }
+    function getHColor(cls) { return {'c-midnight':'#1a2a6c','c-lightblue':'#2584c4','c-green':'#27af61','c-purple':'#7d3cff','c-orange':'#e67e22'}[cls]; }
+</script>
+</body>
+</html>
